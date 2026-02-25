@@ -1,9 +1,14 @@
 package com.example.FESTI.domain.order.entity;
 
+import com.example.FESTI.domain.booth.entity.Booth;
+import com.example.FESTI.domain.user.entity.User;
 import jakarta.persistence.*;
+import lombok.Getter;
 
+import java.util.List;
 import java.util.ArrayList;
 
+@Getter
 @Entity
 @Table(name = "orders",
         indexes = {
@@ -16,11 +21,13 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(name = "booth_id", nullable = false)
-    private Long boothId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "booth_id", nullable = false)
+    private Booth booth;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -31,13 +38,15 @@ public class Order {
 
     protected Order() {}
 
-    public Order(Long userId, Long boothId) {
-        this.userId = userId;
-        this.boothId = boothId;
-        this.status = Status.PAID; // 결제 성공 후 주문 생성이라면 기본값을 PAID로
+    public Order(User user, Booth booth) {
+        if (user == null) throw new IllegalArgumentException("user must not be null");
+        if (booth == null) throw new IllegalArgumentException("booth must not be null");
+
+        this.user = user;
+        this.booth = booth;
+        this.status = Status.PAID; // 결제 성공 후 주문 생성이면 PAID로 시작
     }
 
-    // ===== 연관관계 편의 메서드 =====
     public void addItem(OrderItem item) {
         this.items.add(item);
         item.setOrder(this);
@@ -48,7 +57,6 @@ public class Order {
         item.setOrder(null);
     }
 
-    // ===== 상태 전이 =====
     public void accept() {
         requireStatus(Status.PAID);
         this.status = Status.ACCEPTED;
@@ -81,6 +89,4 @@ public class Order {
             throw new IllegalStateException("주문 상태가 올바르지 않습니다. expected=" + expected + ", actual=" + this.status);
         }
     }
-
-    // (필요 시 Getter 추가 or Lombok @Getter 사용)
 }
