@@ -1,7 +1,10 @@
 package com.example.FESTI.domain.order.entity;
 
+import com.example.FESTI.domain.menu.entity.Menu;
 import jakarta.persistence.*;
+import lombok.Getter;
 
+@Getter
 @Entity
 @Table(name = "order_items",
         indexes = {
@@ -18,21 +21,23 @@ public class OrderItem {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @Column(name = "menu_id", nullable = false)
-    private Long menuId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "menu_id", nullable = false)
+    private Menu menu;
 
     @Column(nullable = false)
     private int quantity;
 
     protected OrderItem() {}
 
-    public OrderItem(Long menuId, int quantity) {
+    public OrderItem(Menu menu, int quantity) {
+        if (menu == null) throw new IllegalArgumentException("menu must not be null");
         if (quantity <= 0) throw new IllegalArgumentException("quantity must be positive");
-        this.menuId = menuId;
+
+        this.menu = menu;
         this.quantity = quantity;
     }
 
-    // 연관관계 설정(외부에서 직접 호출 최소화)
     void setOrder(Order order) {
         this.order = order;
     }
