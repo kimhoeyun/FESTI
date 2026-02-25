@@ -2,7 +2,9 @@ package com.example.FESTI.domain.payments.entity;
 
 import com.example.FESTI.domain.order.entity.Order;
 import jakarta.persistence.*;
+import lombok.Getter;
 
+@Getter
 @Entity
 @Table(name = "payments",
         indexes = {
@@ -61,7 +63,7 @@ public class Payment {
     public void cancel() {
         if (this.status == Status.CANCELED) return;
         if (this.status == Status.CONFIRMED) {
-            // 정책에 따라: "승인된 결제 취소"를 허용할지(취소 API 연동) 결정 필요
+            // 승인된 결제 취소를 허용할지(취소 API 연동) 결정 필요
             // 지금은 허용한다고 가정
         }
         this.status = Status.CANCELED;
