@@ -1,5 +1,6 @@
 package com.example.FESTI.presentation.auth;
 
+import com.example.FESTI.application.auth.AuthException;
 import com.example.FESTI.application.auth.dto.OAuthUserInfo;
 import com.example.FESTI.domain.auth.entity.OAuthProvider;
 import com.example.FESTI.domain.auth.repository.RefreshTokenRepository;
@@ -102,6 +103,39 @@ class SocialAuthFlowIntegrationTest {
     }
 
     @Test
+    void callbackWithIllegalArgumentRedirectsFail() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/oauth2/unknown/callback")
+                        .param("code", "google-user-1")
+                        .param("state", "state-ok")
+                        .cookie(new Cookie(AuthCookieManager.OAUTH_STATE_COOKIE, "state-ok")))
+                .andExpect(status().isFound())
+                .andExpect(result -> assertThat(result.getResponse().getHeader(HttpHeaders.LOCATION)).isEqualTo("/auth/fail"));
+    }
+
+    @Test
+    void callbackWithAuthExceptionRedirectsFail() throws Exception {
+        String state = startAndExtractState("google");
+        mockMvc.perform(get("/api/v1/auth/oauth2/google/callback")
+                        .param("code", "auth-error")
+                        .param("state", state)
+                        .cookie(new Cookie(AuthCookieManager.OAUTH_STATE_COOKIE, state)))
+                .andExpect(status().isFound())
+                .andExpect(result -> assertThat(result.getResponse().getHeader(HttpHeaders.LOCATION)).isEqualTo("/auth/fail"));
+    }
+
+    @Test
+    void callbackWithRuntimeExceptionReturns500Json() throws Exception {
+        String state = startAndExtractState("google");
+        mockMvc.perform(get("/api/v1/auth/oauth2/google/callback")
+                        .param("code", "runtime-error")
+                        .param("state", state)
+                        .cookie(new Cookie(AuthCookieManager.OAUTH_STATE_COOKIE, state)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value("INTERNAL_SERVER_ERROR"))
+                .andExpect(jsonPath("$.message").value("Internal server error"));
+    }
+
+    @Test
     void duplicateCallbackUsesSingleSocialAccount() throws Exception {
         String state1 = startAndExtractState("google");
         callback("google", "duplicate-user", state1);
@@ -134,6 +168,14 @@ class SocialAuthFlowIntegrationTest {
                         .cookie(new Cookie(AuthCookieManager.ACCESS_COOKIE, secondAccess))
                         .content("{\"cellphone\":\"01012345678\"}"))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void meWithoutAccessTokenReturnsUnauthorizedJson() throws Exception {
+        mockMvc.perform(get("/api/v1/users/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("Unauthorized"));
     }
 
     private String startAndExtractState(String provider) throws Exception {
@@ -183,6 +225,12 @@ class SocialAuthFlowIntegrationTest {
 
                 @Override
                 public OAuthUserInfo fetchUserInfo(String code) {
+                    if ("auth-error".equals(code)) {
+                        throw new AuthException("oauth auth failure");
+                    }
+                    if ("runtime-error".equals(code)) {
+                        throw new RuntimeException("unexpected oauth runtime error");
+                    }
                     return new OAuthUserInfo(code, code + "@gmail.com", "google-" + code);
                 }
             };
@@ -204,6 +252,12 @@ class SocialAuthFlowIntegrationTest {
 
                 @Override
                 public OAuthUserInfo fetchUserInfo(String code) {
+                    if ("auth-error".equals(code)) {
+                        throw new AuthException("oauth auth failure");
+                    }
+                    if ("runtime-error".equals(code)) {
+                        throw new RuntimeException("unexpected oauth runtime error");
+                    }
                     return new OAuthUserInfo(code, code + "@kakao.com", "kakao-" + code);
                 }
             };
