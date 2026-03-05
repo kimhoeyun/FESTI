@@ -18,7 +18,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.EnumMap;
@@ -34,7 +33,6 @@ public class OAuthLoginUseCase {
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenHashService tokenHashService;
-    private final Clock clock;
     private final TransactionTemplate transactionTemplate;
 
     public OAuthLoginUseCase(List<OAuthProviderClient> clients,
@@ -43,7 +41,6 @@ public class OAuthLoginUseCase {
                              RefreshTokenRepository refreshTokenRepository,
                              JwtTokenProvider jwtTokenProvider,
                              TokenHashService tokenHashService,
-                             Clock clock,
                              TransactionTemplate transactionTemplate) {
         this.clients = new EnumMap<>(OAuthProvider.class);
         clients.forEach(client -> this.clients.put(client.provider(), client));
@@ -52,7 +49,6 @@ public class OAuthLoginUseCase {
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.tokenHashService = tokenHashService;
-        this.clock = clock;
         this.transactionTemplate = transactionTemplate;
     }
 

@@ -74,7 +74,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(authProperties.getRedirect().getSuccessUrl()))
                     .build();
-        } catch (Exception e) {
+        } catch (AuthException | IllegalArgumentException e) {
             authCookieManager.clearStateCookie(response);
             authCookieManager.clearAuthCookies(response);
             return ResponseEntity.status(HttpStatus.FOUND)
