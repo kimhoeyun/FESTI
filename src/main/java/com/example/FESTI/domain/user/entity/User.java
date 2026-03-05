@@ -7,6 +7,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Getter
 @Entity
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Enumerated(EnumType.STRING)
@@ -25,7 +26,7 @@ public class User {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Column(unique = true, length = 20)
     private String cellphone;
 
     @CreatedDate
@@ -40,8 +41,15 @@ public class User {
     }
 
     public User(Role role, String name, String cellphone) {
-        this.role = role;
-        this.name = name;
+        this.role = role == null ? Role.CUSTOMER : role;
+        this.name = Objects.requireNonNull(name, "name must not be null");
+        this.cellphone = cellphone;
+    }
+
+    public void updateCellphone(String cellphone) {
+        if (cellphone == null || cellphone.isBlank()) {
+            throw new IllegalArgumentException("cellphone must not be blank");
+        }
         this.cellphone = cellphone;
     }
 }
