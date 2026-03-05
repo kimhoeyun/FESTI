@@ -18,7 +18,7 @@ import lombok.Getter;
 public class Payment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     // 주문당 1결제 가정
